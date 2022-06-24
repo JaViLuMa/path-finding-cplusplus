@@ -7,9 +7,9 @@
 constexpr auto WIDTH = 1000;
 constexpr auto HEIGHT = 1000;
 
-constexpr auto BOARD_COLUMNS = 50;
+constexpr auto BOARD_COLUMNS = 10;
 constexpr auto BOARD_ROWS = BOARD_COLUMNS;
-constexpr auto WALL_THRESHOLD = 0.1f;
+constexpr auto WALL_THRESHOLD = 0.3f;
 
 constexpr auto FPS = 60;
 constexpr auto TITLE = "Matej Ruzic, 1IP1";
@@ -25,15 +25,15 @@ struct Node
 	int i, j;
 
 	float f = 0,
-		g = 0,
-		h = 0;
+		  g = 0,
+		  h = 0;
 
 	bool wall = false;
 
 	vector<Node*> neighbors;
 
 	Node* previous = nullptr;
-	// Node* current = nullptr;
+
 
 	void addNeighbors(vector<vector<Node*>>& g)
 	{
@@ -89,34 +89,6 @@ void popOpenSet(vector<Node*>& os, Node*& c)
 }
 
 
-RectangleShape makeCell(int i, int j, bool wall, Vector2f& cellSize)
-{
-	RectangleShape cell;
-	cell.setPosition(i * cellSize.x, j * cellSize.y);
-	cell.setSize(cellSize);
-	cell.setFillColor(wall ? Color::Black : Color::White);
-
-	if (i == 0 && j == 0) cell.setFillColor(Color::Yellow);
-	if (i == BOARD_ROWS - 1 && j == BOARD_COLUMNS - 1) cell.setFillColor(Color::Green);
-
-	return cell;
-}
-
-
-void showCells(RenderWindow& window, vector<vector<Node*>>& g)
-{
-	Vector2f cellSize(ceil(HEIGHT / BOARD_ROWS), ceil(WIDTH / BOARD_COLUMNS));
-
-	for (int row = 0; row < BOARD_ROWS; row++)
-	{
-		for (int column = 0; column < BOARD_COLUMNS; column++)
-		{
-			window.draw(makeCell(row, column, g[row][column]->wall, cellSize));
-		}
-	}
-}
-
-
 void addNeighbors(vector<vector<Node*>> &g)
 {
 	for (int row = 0; row < BOARD_ROWS; row++)
@@ -162,45 +134,6 @@ void prepareTemplateGrid(vector<vector<double>>& tg)
 			}
 		}
 	}
-}
-
-
-RectangleShape drawPathNode(Node*& n)
-{
-	Vector2f cellSize(ceil(HEIGHT / BOARD_ROWS), ceil(WIDTH / BOARD_COLUMNS));
-
-	RectangleShape cell;
-	cell.setPosition(n->i * cellSize.x, n->j * cellSize.y);
-	cell.setSize(cellSize);
-	cell.setFillColor(Color::Color(50, 0, 255));
-
-	return cell;
-}
-
-
-RectangleShape drawClosedSetNodes(Node*& n)
-{
-	Vector2f cellSize(ceil(HEIGHT / BOARD_ROWS), ceil(WIDTH / BOARD_COLUMNS));
-
-	RectangleShape cell;
-	cell.setPosition(n->i * cellSize.x, n->j * cellSize.y);
-	cell.setSize(cellSize);
-	cell.setFillColor(Color::Color(150, 0, 0, 100));
-
-	return cell;
-}
-
-
-RectangleShape drawOpenSetNodes(Node*& n)
-{
-	Vector2f cellSize(ceil(HEIGHT / BOARD_ROWS), ceil(WIDTH / BOARD_COLUMNS));
-
-	RectangleShape cell;
-	cell.setPosition(n->i * cellSize.x, n->j * cellSize.y);
-	cell.setSize(cellSize);
-	cell.setFillColor(Color::Color(0, 150, 0, 100));
-
-	return cell;
 }
 
 
