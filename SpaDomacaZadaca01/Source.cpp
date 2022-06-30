@@ -7,9 +7,9 @@
 constexpr auto WIDTH = 1000;
 constexpr auto HEIGHT = 1000;
 
-constexpr auto BOARD_COLUMNS = 10;
+constexpr auto BOARD_COLUMNS = 40;
 constexpr auto BOARD_ROWS = BOARD_COLUMNS;
-constexpr auto WALL_THRESHOLD = 0.3f;
+constexpr auto WALL_THRESHOLD = 0.25f;
 
 constexpr auto FPS = 60;
 constexpr auto TITLE = "Matej Ruzic, 1IP1";
@@ -47,23 +47,23 @@ struct Node
 	}
 
 
-	RectangleShape draw(int i, int j, const Color &color)
+	RectangleShape draw(int i, int j, const Color &c)
 	{
 		Vector2f cellSize(ceil(HEIGHT / BOARD_ROWS), ceil(WIDTH / BOARD_COLUMNS));
 
 		RectangleShape cell;
 		cell.setPosition(i * cellSize.x, j * cellSize.y);
 		cell.setSize(cellSize);
-		cell.setFillColor(color);
+		cell.setFillColor(c);
 
 		return cell;
 	}
 
 
-	void show(RenderWindow &w, const Color &color)
+	void show(RenderWindow &w, const Color &c)
 	{
 		if (this->wall) w.draw(draw(this->i, this->j, Color::Black));
-		else w.draw(draw(this->i, this->j, color));
+		else w.draw(draw(this->i, this->j, c));
 	}
 
 
@@ -146,6 +146,7 @@ int main()
 
 	vector<Node*> openSet;
 	vector<Node*> closedSet;
+	vector<Node*> endPath;
 
 	vector<vector<double>> templateGrid;
 	vector<vector<Node*>> grid;
@@ -164,6 +165,8 @@ int main()
 
 	Node *current{};
 
+	bool end = false;
+
 	while (window.isOpen())
 	{
 		Event event;
@@ -175,77 +178,80 @@ int main()
 
 		window.clear(Color::White);
 
-		if (openSet.size() > 0)
+		if (!end)
 		{
-			int lowIndex = 0;
-
-			for (int i = 0; i < openSet.size(); i++)
+			if (openSet.size() > 0)
 			{
-				if (openSet[i]->f < openSet[lowIndex]->f)
+				int lowIndex = 0;
+
+				for (int i = 0; i < openSet.size(); i++)
 				{
-					lowIndex = i;
-				}
-			}
-
-			current = openSet[lowIndex];
-
-			if (current == endingPosition)
-			{
-				cout << "Path Finding COMPLETE!!!" << endl;
-				break;
-			}
-
-			popOpenSet(openSet, current);
-			closedSet.push_back(current);
-
-			vector<Node*> neighbors = current->neighbors;
-
-			for (int i = 0; i < neighbors.size(); i++)
-			{
-				Node* neighbor = neighbors[i];
-
-				vector<Node*>::iterator closedSetIt;
-				closedSetIt = find(closedSet.begin(), closedSet.end(), neighbor);
-
-				if (closedSetIt == closedSet.end() && neighbor->wall == false)
-				{
-					double tempG = neighbor->g + 1;
-
-					bool newPath = false;
-
-					vector<Node*>::iterator openSetIt;
-					openSetIt = find(openSet.begin(), openSet.end(), neighbor);
-
-					if (openSetIt != openSet.end())
+					if (openSet[i]->f < openSet[lowIndex]->f)
 					{
-						if (tempG < neighbor->g)
+						lowIndex = i;
+					}
+				}
+
+				current = openSet[lowIndex];
+
+				if (current == endingPosition)
+				{
+					cout << "Path Finding COMPLETE!!!" << endl;
+					end = true;
+				}
+
+				popOpenSet(openSet, current);
+				closedSet.push_back(current);
+
+				vector<Node*> neighbors = current->neighbors;
+
+				for (int i = 0; i < neighbors.size(); i++)
+				{
+					Node* neighbor = neighbors[i];
+
+					vector<Node*>::iterator closedSetIt;
+					closedSetIt = find(closedSet.begin(), closedSet.end(), neighbor);
+
+					if (closedSetIt == closedSet.end() && neighbor->wall == false)
+					{
+						double tempG = neighbor->g + 1;
+
+						bool newPath = false;
+
+						vector<Node*>::iterator openSetIt;
+						openSetIt = find(openSet.begin(), openSet.end(), neighbor);
+
+						if (openSetIt != openSet.end())
+						{
+							if (tempG < neighbor->g)
+							{
+								neighbor->g = tempG;
+								newPath = true;
+							}
+						}
+
+						else
 						{
 							neighbor->g = tempG;
 							newPath = true;
+							openSet.push_back(neighbor);
 						}
-					}
 
-					else
-					{
-						neighbor->g = tempG;
-						newPath = true;
-						openSet.push_back(neighbor);
-					}
-
-					if (newPath)
-					{
-						neighbor->h = heuristics(neighbor, endingPosition);
-						neighbor->f = neighbor->g + neighbor->h;
-						neighbor->previous = current;
+						if (newPath)
+						{
+							neighbor->h = heuristics(neighbor, endingPosition);
+							neighbor->f = neighbor->g + neighbor->h;
+							neighbor->previous = current;
+						}
 					}
 				}
 			}
-		}
 
-		else
-		{
-			cout << "NO SOLUTION" << endl;
-			break;
+			else
+			{
+				cout << "NO SOLUTION" << endl;
+				end = true;
+			}
 		}
 
 		for (int row = 0; row < BOARD_ROWS; row++)
@@ -274,21 +280,42 @@ int main()
 
 		vector<Node*> path;
 
-		Node* temp = current;
-
-		path.push_back(current);
-
-		while (temp->previous)
+		if (!end)
 		{
-			path.push_back(temp->previous);
-			temp = temp->previous;
+			Node* temp = current;
+
+			path.push_back(current);
+
+			while (temp->previous)
+			{
+				path.push_back(temp->previous);
+				temp = temp->previous;
+				
+				if (path.size() != 0)
+				{
+					endPath = path;
+				}
+			}
 		}
 
-		for (int i = 0; i < path.size(); i++)
+		if (!end)
 		{
-			path[i]->show(window, Color::Color(50, 0, 255));
-			grid[0][0]->show(window, Color::Green);
-			grid[BOARD_ROWS - 1][BOARD_COLUMNS - 1]->show(window, Color::Yellow);
+			for (int i = 0; i < path.size(); i++)
+			{
+				path[i]->show(window, Color::Color(50, 0, 255));
+				grid[0][0]->show(window, Color::Green);
+				grid[BOARD_ROWS - 1][BOARD_COLUMNS - 1]->show(window, Color::Yellow);
+			}
+		}
+
+		else
+		{
+			for (int i = 0; i < endPath.size(); i++)
+			{
+				endPath[i]->show(window, Color::Color(50, 0, 255));
+				grid[0][0]->show(window, Color::Green);
+				grid[BOARD_ROWS - 1][BOARD_COLUMNS - 1]->show(window, Color::Yellow);
+			}
 		}
 
 		window.display();
